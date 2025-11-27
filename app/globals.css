@@ -262,7 +262,7 @@ img {
   }
 
   .preloader-mask {
-    mask: linear-gradient(var(--base-300) , var(--base-300)) , url('/mask-img.png') center/50% no-repeat;
+    mask: linear-gradient(var(--base-300) , var(--base-300)) , url('/ak47.jpeg') center/50% no-repeat;
     mask-composite: subtract;
   }
 
