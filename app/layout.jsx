@@ -1,7 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Nav from "./components/Nav";
-import TransitionProvider from "./providers/TransitionsProvider";
+import Script from "next/script";
 
 
 const geistSans = Geist({
@@ -22,13 +21,15 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <Script type="module" src="https://unpkg.com/ionicons@7.4.0/dist/ionicons/ionicons.esm.js"></Script>
+        <Script nomodule src="https://unpkg.com/ionicons@7.4.0/dist/ionicons/ionicons.js"></Script>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <TransitionProvider>
-        <Nav />
+        
         {children}
-        </TransitionProvider>
       </body>
     </html>
   );
