@@ -1,392 +1,346 @@
 'use client'
 
 import gsap from "gsap"
-import { useEffect } from "react";
+import { SplitText } from "gsap/SplitText"
+import { useEffect } from "react"
+import slides from '../constants/index.js'
+
+gsap.registerPlugin(SplitText)
+
 
 const page = () => {
 
-  const menuItems = [
-    {label : 'Vision' , icon : 'scan-sharp', href: '#vision'},
-    {label : 'Portfolio' , icon : 'layers-sharp', href: '#portfolio'},
-    {label : 'People' , icon : 'person-sharp', href: '#people'},
-    {label : 'Insights' , icon : 'browsers-sharp', href: '#insights'},
-    {label : 'Careesrs' , icon : 'stats-chart-sharp', href: '#careers'},
-    {label : 'About Us' , icon : 'reader-sharp', href: '#about'},
-  ]
-
-  let isOpen = false;
-  let isMenuAnimating = false;
-  let responsiveConfig = {};
-
-  const getResponsiveConfig = ()=> {
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const isMobile = viewportWidth < 1000;
-
-    const maxSize = Math.min(viewportWidth * 0.9, viewportHeight * 0.9);
-    const menuSize = isMobile ? Math.min(maxSize , 480) : 700;
-
-    return {
-      menuSize,
-      center: menuSize / 2,
-      innerRadius: menuSize * 0.08,
-      outerRadius: menuSize * 0.42,
-      contentRadius: menuSize * 0.28,
-    }
-  }
-
   useEffect(() => {
-    responsiveConfig = getResponsiveConfig()
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const totalSlides = slides.length;
+      let currentSlide = 1;
 
-    const menu = document.querySelector('.circular-menu');
-    const joystick = document.querySelector('.joystick');
-    const menuOverlayNav = document.querySelector('.menu-overlay-nav');
-    const menuOverlayFooter = document.querySelector('.menu-overlay-footer');
+      let isAnimating = false
+      let scrollAllowed = true
+      let lastScrollTime = 0
 
-    menu.style.width = `${responsiveConfig.menuSize}px`;
-    menu.style.height = `${responsiveConfig.menuSize}px`;
+      const createSlide = (slideIndex)=>{
+        const slideData = slides[slideIndex - 1]
 
-    gsap.set(joystick, {scale:0});
-    gsap.set([menuOverlayFooter, menuOverlayNav], {opacity:0})
+        const slide = document.createElement('div')
+        slide.className = 'slide'
 
-    menuItems.forEach((item,index) => {
-      const segment = createSegment(item,index,menuItems.length);
-      segment.addEventListener('mouseenter', ()=>{
+        const slideImg = document.createElement('div')
+        slideImg.className = 'slide-img'
+        const img = document.createElement('img')
+        img.src= slideData.slideImg
+        img.alt = '';
+        slideImg.appendChild(img);
 
-        // Audio can be added here
+        const slideHeader = document.createElement('div')
+        slide.className = 'slide-header'
 
+        const slideTitle = document.createElement('div')
+        slideTitle.className = 'slide-title'
+        const h1 = document.createElement('h1')
+        h1.textContent = slideData.slideTitle
+        slideTitle.appendChild(h1);
+
+        const slideDescription = document.createElement('div')
+        slideDescription.className = 'slide-description'
+        const p = document.createElement('p')
+        p.textContent = slideData.slideDescription
+        slideDescription.appendChild(p);
+
+        const slideLink = document.createElement('div')
+        slideLink.className = 'slide-link'
+        const a = document.createElement('a')
+        a.href = slideData.slideUrl
+        a.textContent = 'View Project'
+        slideLink.appendChild(a);
+
+        slideHeader.appendChild(slideTitle);
+        slideHeader.appendChild(slideDescription);
+        slideHeader.appendChild(slideLink);
+
+        const slideInfo = document.createElement('div')
+        slideInfo.className = 'slide-info'
+
+        const slideTags = document.createElement('div')
+        slideTags.className = 'slide-tags'
+        const tagsLabel = document.createElement('p')
+        tagsLabel.textContent = 'Tags'
+        slideTags.appendChild(tagsLabel);
+
+        slideData.slideTags.forEach((tag) => {
+          const tagP = document.createElement('p');
+          tagP.textContent = tag
+          slideTags.appendChild(tagP)
+        })
+
+        const slideIndexWrapper = document.createElement('div')
+        slideIndexWrapper.className = 'slide-index-wrapper'
+        const slideIndexCopy = document.createElement('p')
+        slideIndexCopy.textContent = slideIndex.toString().padStart(2, '0')
+        const slideIndexSeperator = document.createElement('p')
+        slideIndexSeperator.textContent = '/'
+        const slidesTotalCount = document.createElement('p')
+        slidesTotalCount.textContent = totalSlides.toString().padStart(2,'0')
         
+        slideIndexWrapper.appendChild(slideIndexCopy)
+        slideIndexWrapper.appendChild(slideIndexSeperator)
+        slideIndexWrapper.appendChild(slidesTotalCount)
+
+        slideInfo.appendChild(slideTags)
+        slideInfo.appendChild(slideIndexWrapper)
+
+        slide.appendChild(slideImg)
+        slide.appendChild(slideHeader)
+        slide.appendChild(slideInfo)
+
+        return slide;
+      }
+
+      const splitText = (slide)=> {
+    const slideHeader = slide.querySelector('.slide-title h1')
+    if(slideHeader) {
+      SplitText.create(slideHeader, {
+        type:'word',
+        wordsClass: 'word',
+        mask:'words',
       })
-      menu.appendChild(segment)
+    }
+
+    const slideContent = slide.querySelector('p,a')
+    slideContent.forEach((element)=>{
+      SplitText.create(element,{
+        type:'lines',
+        linesClass: 'line',
+        mask:'lines',
+        reduceWhiteSpace:false,
+      })
+    })
+  }
+
+  const animateSlide = (direction)=> {
+    if(isAnimating || !scrollAllowed) return
+
+    isAnimating = true
+    scrollAllowed = false
+
+    const slider = document.querySelector('.slider')
+    const currentSlideElement = slider.querySelector('.slide')
+
+    if(direction === 'down') {
+      currentSlide = createSlide === totalSlides ? 1 : currentSlide + 1
+    } else {
+      currentSlide = currentSlide === 1 ? totalSlides : currentSlide - 1
+    }
+
+    const exitY = direction === 'down' ? '-200vh' : '200vh'
+    const entryY = direction === 'down' ? '100vh' : '-100vh'
+    const entryClipPath = direction === 'down' ? 'polygon(20% 20%, 80% 20%,80% 100%,20% 100%)' : 'polygon(20% 0%, 80% 0%, 80% 80%,20% 80%)'
+
+    gsap.to(currentSlideElement, {
+      scale: 0.25,
+      opacity: 0,
+      rotation:30,
+      y:exitY,
+      duration:2,
+      ease:'power4.inOut',
+      force3d: true,
+      onComplete: ()=> {
+        currentSlideElement.remove()
+      }
     })
 
-    document
-    .querySelector('.menu-toggle-btn')
-    .addEventListener('click', toggleMenu);
-    document.querySelector('.close-btn').addEventListener('click', toggleMenu);
-    
-    initCenterDrag();
-  }, []);
+    setTimeout(()=>{
+      const newSlide = createSlide(currentSlide)
 
+      gsap.set(newSlide, {
+        y:entryY,
+        clipPath:entryClipPath,
+        force3d:true,
+      })
 
-  const createSegment = (item,index,total)=>{
-    const segment = document.createElement('a');
-    segment.className = 'menu-segment';
-    segment.href = item.href;
+      slider.appendChild(newSlide);
 
-    const {menuSize , center , innerRadius , outerRadius , contentRadius} = responsiveConfig;
+      SplitText(newSlide);
 
-    const anglePerSegment = 360 / total;
-    const baseStartAngle = anglePerSegment * index;
-    const centerAngle = baseStartAngle + anglePerSegment /2;
-    const startAngle = baseStartAngle + 0.19;
-    const endAngle = baseStartAngle + anglePerSegment - 0.19;
+      const words = newSlide.querySelector('.word')
+      const lines = newSlide.querySelector('.line')
 
-    const innerStartX = 
-    center + innerRadius * Math.cos(((startAngle - 90) * Math.PI) / 180);
-    const innerStartY = 
-    center + innerRadius * Math.sin(((startAngle - 90) * Math.PI) / 180);
-    const outerStartX = 
-    center + outerRadius * Math.cos(((startAngle - 90) * Math.PI) / 180);
-    const outerStartY = 
-    center + outerRadius * Math.sin(((startAngle - 90) * Math.PI) / 180);
-    const innerEndX = 
-    center + innerRadius * Math.cos(((endAngle - 90) * Math.PI) / 180);
-    const innerEndY = 
-    center + innerRadius * Math.sin(((endAngle - 90) * Math.PI) / 180);
-    const outerEndX = 
-    center + outerRadius * Math.cos(((endAngle - 90) * Math.PI) / 180);
-    const outerEndY = 
-    center + outerRadius * Math.sin(((endAngle - 90) * Math.PI) / 180);
+      gsap.set([...words,...lines], {
+        y:'100%',
+        force3d:true,
+      })
 
+      gsap.to(newSlide, {
+        y:0,
+        clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
+        duration:1.5,
+        ease:'power4.out',
+        force3d:true,
+        onStart: ()=> {
+          const tl = gsap.timeline()
 
-    const largeArcFlag = endAngle - startAngle > 180 ? 1:0;
+          const headerWords = newSlide.querySelectorAll('.slide-title .word')
+          tl.to(
+            headerWords,
+            {
+              y:'0%',
+              duration:1,
+              ease: 'power4.out',
+              stagger:0.1,
+              force3d:true,
+            },
+            0.75
+          )
 
-    const pathData = [
-      `M ${innerStartX} ${innerStartY}`,
-      `L ${outerStartX} ${outerStartY}`,
-      `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${outerEndX} ${outerEndY}`,
-      `L ${innerEndX} ${innerEndY}`,
-      `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${innerStartX} ${innerStartY}`,
-      'Z'
-    ].join(' ');
+          const tagsLines = newSlide.querySelectorAll('.slide-tags .line')
+          const indexLines = newSlide.querySelectorAll('.slide-index-wrapper .line')
+          const descriptionLines = newSlide.querySelectorAll('.slide-description .line')
 
-    segment.style.clipPath = `path('${pathData}')`;
-    segment.style.width = `${menuSize}px`;
-    segment.style.height = `${menuSize}px`;
+          tl.to(
+            tagsLines,
+            {
+              y:'0%',
+              duration:1,
+              ease:'power4.out',
+              stagger:0.1,
+            },
+            '-=0.75'
+          );
 
-    const contentX = 
-    center + contentRadius * Math.cos(((centerAngle - 90) * Math.PI) / 180)
-    const contentY = 
-    center + contentRadius * Math.sin(((centerAngle - 90) * Math.PI) / 180)
+          tl.to(
+            indexLines,
+            {
+              y:'0%',
+              duration:1,
+              ease:'power4.out',
+              stagger:0.1,
+            },
+            '<'
+          );
 
-    segment.innerHTML = `
-    <div class='segment-content'
-    style='left: ${contentX}px; top: ${contentY}px; transform:translate(-50% , -50%);'>
-    <ion-icon name='${item.icon}'></ion-icon>
-    <div class='label'>${item.label}</div>
-    </div>
-    `;
+          tl.to(
+            descriptionLines,
+            {
+              y:'0%',
+              duration:1,
+              ease:'power4.out',
+              stagger:0.1,
+            },
+            '<'
+          );
 
-    return segment;
-  }
+          const linkLines = newSlide.querySelectorAll('.slide-link .line')
+          tl.to(
+            linkLines,
+            {
+              y:'0%',
+              duration:1,
+              ease:'power4.out',
+            },
+            '-=1'
+          )
+        },
 
-  const toggleMenu = () => {
-  if (isMenuAnimating) return;
-
-  const menuOverlay = document.querySelector('.menu-overlay');
-  const menuSegments = document.querySelectorAll('.menu-segment');
-  const joystick = document.querySelector('.joystick');
-  const menuOverlayNav = document.querySelector('.menu-overlay-nav');
-  const menuOverlayFooter = document.querySelector('.menu-overlay-footer');
-
-  isMenuAnimating = true;
-
-  if (!isOpen) {
-    isOpen = true;
-    // new Audio('/menu-open.mp3').play();
-
-    gsap.to(menuOverlay, {
-      opacity: 1,
-      duration: 0.3,
-      ease: 'power2.out',
-      onStart: () => (menuOverlay.style.pointerEvents = 'all'),
-    });
-
-    gsap.to(joystick, {
-      scale: 1,
-      duration: 0.4,
-      delay: 0.2,
-      ease: 'back.out(1.7)',
-    });
-
-    gsap.set([menuOverlayNav, menuOverlayFooter], { opacity: 0 });
-    gsap.to([menuOverlayNav, menuOverlayFooter], {
-      opacity: 1,
-      duration: 0.075,
-      delay: 0.3,
-      repeat: 3,
-      yoyo: true,
-      ease: 'power2.inOut',
-      onComplete: () =>
-        gsap.set([menuOverlayNav, menuOverlayFooter], { opacity: 1 }),
-    });
-
-    [...Array(menuSegments.length).keys()]
-      .sort(() => Math.random() - 0.5)
-      .forEach((originalIndex, shuffledPosition) => {
-        const segment = menuSegments[originalIndex];
-
-        gsap.set(segment, { opacity: 0 });
-        gsap.to(segment, {
-          opacity: 1,
-          duration: 0.075,
-          delay: shuffledPosition * 0.075,
-          repeat: 3,
-          yoyo: true,
-          ease: 'power2.inOut',
-          onComplete: () => {
-            gsap.set(segment, { opacity: 1 });
-            if (shuffledPosition === menuSegments.length - 1) {
-              isMenuAnimating = false;
-            }
-          },
-        });
-      });
-
-  } else {
-    isOpen = false;
-    // new Audio('/menu-close.mp3').play();
-
-    gsap.to([menuOverlayNav, menuOverlayFooter], {
-      opacity: 0,
-      duration: 0.05,
-      repeat: 2,
-      yoyo: true,
-      ease: 'power2.inOut',
-      onComplete: () =>
-        gsap.set([menuOverlayNav, menuOverlayFooter], { opacity: 0 }),
-    });
-
-    gsap.to(joystick, {
-      scale: 0,
-      duration: 0.3,
-      delay: 0.2,
-      ease: 'back.in(1.7)',
-    });
-
-    [...Array(menuSegments.length).keys()]
-      .sort(() => Math.random() - 0.5)
-      .forEach((originalIndex, shuffledPosition) => {
-        const segment = menuSegments[originalIndex];
-
-        gsap.to(segment, {
-          opacity: 0,
-          duration: 0.05,
-          delay: shuffledPosition * 0.05,
-          repeat: 2,
-          yoyo: true,
-          ease: 'power2.inOut',
-          onComplete: () => gsap.set(segment, { opacity: 0 }),
-        });
-      });
-
-    gsap.to(menuOverlay, {
-      opacity: 0,
-      duration: 0.3,
-      delay: 0.6,
-      ease: 'power2.out',
-      onComplete: () => {
-        menuOverlay.style.pointerEvents = 'none';
-        isMenuAnimating = false;
-      },
-    });
-  }
-};
-
-
-const initCenterDrag = ()=> {
-  const joystick = document.querySelector('.joystick')
-  let isDragging = false;
-  let currentX = 0;
-  let currentY = 0;
-  let targetX = 0;
-  let targetY = 0;
-  let activeSegment = null
-
-  const animate = ()=>{
-    currentX += (targetX - currentX) * 0.15;
-    currentY += (targetY - currentY) * 0.15;
-
-    gsap.set(joystick, {
-      x: currentX,
-      y: currentY,
-    })
-
-    if(
-      isDragging &&
-      Math.sqrt(currentX * currentX + currentY * currentY) > 20
-    ){
-      const angle = Math.atan2(currentY,currentX) * (180 / Math.PI);
-      const segmentIndex = Math.floor(((angle + 90 + 360) % 360) / (360 / menuItems.length)) % menuItems.length;
-      const segment = document.querySelectorAll('.menu-segment')[segmentIndex]
-
-      if(segment !== activeSegment){
-        if(activeSegment){
-          activeSegment.style.animation = '';
-          activeSegment.querySelector('.segment-content').style.animation = '';
-          activeSegment.style.zIndex = '';
+        onComplete: ()=> {
+          isAnimating = false;
+          setTimeout(()=> {
+            scrollAllowed = true;
+            lastScrollTime = Date.now()
+          },100)
         }
-        activeSegment = segment;
-        segment.style.animation = 'flickerHover 350ms ease-in-out forwards';
-        segment.querySelector('.segment-content').style.animation = 'contentFlickerHover 350ms ease-in-out forwards';
-        segment.style.zIndex = '10';
-        if(isOpen){
-          new Audio('/menu-select.mp3').play().catch(()=>{})
-        }
-      }
-    }else{
-      if(activeSegment){
-        activeSegment.style.animation = '';
-        activeSegment.querySelector('.segment-content').style.animation = '';
-        activeSegment.style.zIndex = '';
-        activeSegment = null;
-      }
-    }
-    requestAnimationFrame(animate)
+      })
+    }, 750)
   }
-  joystick.addEventListener('mousedown', (e)=>{
-    isDragging =true;
-    const rect = joystick.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
 
-    const drag = (e)=> {
-      if(!isDragging) return
+  const handleScroll = (direction)=>{
+    const now = Date.now();
 
-      const deltaX = (e.clientX || e.touches[0]?.clientX) - centerX;
-      const deltaY = (e.clientY || e.touches[0]?.clientY) - centerY;
-      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      const maxDrag = 100*0.25;
+    if(isAnimating || !scrollAllowed) return
+    if(now - lastScrollTime < 1000) return
 
-      if(distance <= 20){
-        targetX = targetY = 0;
-      } else if(distance > maxDrag) {
-        const ratio = maxDrag / distance;
-        targetX = deltaX * ratio
-        targetY = deltaY * ratio
-      } else {
-        targetX = deltaX
-        targetY = deltaY
-      }
-      e.preventDefault()
+    lastScrollTime = now
+    animateSlide(direction)
+  }
+
+  window.addEventListener('wheel',
+    (e)=>{
+      e.preventDefault();
+      const direction = e.deltaY > 0 ? 'down' : 'up'
+      handleScroll(direction)
+    },
+    {
+      passive:false
     }
-    
-    const endDrag = ()=> {
-      isDragging = false;
-      targetX = targetY = 0
-      document.removeEventListener('mousemove', drag)
-      document.removeEventListener('mouseup', endDrag)
-    }
-    document.addEventListener('mousemove', drag)
-    document.addEventListener('mouseup', endDrag)
+  );
+
+  let touchStartY = 0
+  let isTouchActive = false
+
+  window.addEventListener('touchstart', (e)=>{
+    touchStartY = e.touches[0].clientY
+    isTouchActive = true
+  }, {passive: false})
+
+  window.addEventListener('touchmove', (e)=>{
     e.preventDefault()
+    if(!isTouchActive || isAnimating || !scrollAllowed) return
+
+    const touchCurrentY = e.touches[0].clientY;
+    const difference = touchStartY - touchCurrentY
+
+    if(Math.abs(difference) > 50) {
+      isTouchActive = false
+      const direction = difference > 0 ? 'down' : 'up'
+      handleScroll(direction)
+    }
+  }, {passive : false})
+
+  window.addEventListener('touchend',()=>{
+    isTouchActive = false
   })
-  animate()
-}
+    })
+  }, []);
 
   
 
+
   return (
-
-    
-
     <main>
-
-
-      {/* html part */}
-
-    <div className="menu-toggle-btn">
-
-      <div className="hamburger-bar"></div>
-      <div className="hamburger-bar"></div>
-
-    </div>
-
-    <div className="menu-overlay">
-      <div className="menu-bg blur-[5px]"></div>
-
-      <div className="menu-overlay-nav">
-        <div className="close-btn">
-          <div className="close-btn-bar"></div>
-          <div className="close-btn-bar"></div>
-        </div>
-        <div className="menu-overlay-items">
-          <a href='#'><ion-icon name='logo-google'></ion-icon></a>
-          <a href='#'><ion-icon name='logo-github'></ion-icon></a>
-          <a href='#'><ion-icon name='logo-vercel'></ion-icon></a>
-        </div>
-      </div>
-
-      <div className="menu-overlay-footer">
-        <p>Copyright &copy; 2025 All Rights Reserved</p>
-        <div className="menu-overlay-items">
-          <a href='#'>Cookie Settings</a>
-          <a href='#'>Private Policy</a>
-          <a href='#'>Legal Disclaimer</a>
-        </div>
-      </div>
-
-      <div className="circular-menu">
-          <div className="joystick">
-            <ion-icon name='grid-sharp' class='center-icon center-main'></ion-icon>
-            <ion-icon name='chevron-up-sharp' class='center-icon center-up'></ion-icon>
-            <ion-icon name='chevron-down-sharp' class='center-icon center-down'></ion-icon>
-            <ion-icon name='chevron-back-sharp' class='center-icon center-left'></ion-icon>
-            <ion-icon name='chevron-forward-sharp' class='center-icon center-right'></ion-icon>
+      
+      <div className="slider">
+        <div className="slide">
+          <div className="slide-img">
+            <img className="blur-[2px]" src="/mountain.jpg" alt="/"/>
+          </div>
+          <div className="slide-header">
+            <div className="slide-title">
+              <h1>Monochrome Signal</h1>
+            </div>
+            <div className="slide-description">
+              <p>
+                Lorem ipsum dolor sit amet consectetur adipisicing elit. Quasi, aut debitis nemo suscipit laborum dolorum, soluta distinctio reprehenderit enim amet, culpa delectus deserunt magni cupiditate. Quasi esse tempore ducimus nihil.
+              </p>
+            </div>
+            <div className="slide-link">
+              <a href="">View Project</a>
+            </div>
+          </div>
+          <div className="slide-info">
+            <div className="slide-tags">
+              <p>Tags</p>
+              <p>Monochrome</p>
+              <p>Editorial</p>
+              <p>Fashion</p>
+              <p>Visual Identity</p>
+            </div>
+            <div className="slide-index-wrapper">
+              <p id='slide-index'>01</p>
+              <p>/</p>
+              <p id="total-slide-count">04</p>
+            </div>
           </div>
         </div>
-    </div>
+      </div>
     </main>
   )
 }
