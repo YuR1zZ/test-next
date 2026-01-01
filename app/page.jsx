@@ -11,294 +11,322 @@ gsap.registerPlugin(SplitText)
 const page = () => {
 
   useEffect(() => {
-    document.addEventListener('DOMContentLoaded', ()=>{
-      const totalSlides = slides.length;
-      let currentSlide = 1;
+    if (!slides || slides.length === 0) {
+      console.error('No slides data available')
+      return
+    }
 
-      let isAnimating = false
-      let scrollAllowed = true
-      let lastScrollTime = 0
+    const totalSlides = slides.length;
+    let currentSlide = 1;
 
-      const createSlide = (slideIndex)=>{
-        const slideData = slides[slideIndex - 1]
+    let isAnimating = false
+    let scrollAllowed = true
+    let lastScrollTime = 0
 
-        const slide = document.createElement('div')
-        slide.className = 'slide'
+    const createSlide = (slideIndex)=>{
+      // Ensure slideIndex is within valid range (1 to totalSlides)
+      if (slideIndex < 1 || slideIndex > totalSlides) {
+        console.error(`Invalid slide index: ${slideIndex}. Valid range: 1-${totalSlides}`)
+        return null
+      }
 
-        const slideImg = document.createElement('div')
-        slideImg.className = 'slide-img'
-        const img = document.createElement('img')
-        img.src= slideData.slideImg
-        img.alt = '';
-        slideImg.appendChild(img);
+      const arrayIndex = slideIndex - 1
+      const slideData = slides[arrayIndex]
 
-        const slideHeader = document.createElement('div')
-        slide.className = 'slide-header'
+      if (!slideData) {
+        console.error(`Slide data not found for index ${slideIndex} (array index ${arrayIndex}). Total slides: ${totalSlides}, slides array length: ${slides.length}`)
+        console.log('Available slides:', slides.map((s, i) => ({ index: i, title: s?.slideTitle })))
+        return null
+      }
 
-        const slideTitle = document.createElement('div')
-        slideTitle.className = 'slide-title'
-        const h1 = document.createElement('h1')
-        h1.textContent = slideData.slideTitle
-        slideTitle.appendChild(h1);
+      const slide = document.createElement('div')
+      slide.className = 'slide'
 
-        const slideDescription = document.createElement('div')
-        slideDescription.className = 'slide-description'
-        const p = document.createElement('p')
-        p.textContent = slideData.slideDescription
-        slideDescription.appendChild(p);
+      const slideHeader = document.createElement('div')
+      slideHeader.className = 'slide-header'
 
-        const slideLink = document.createElement('div')
-        slideLink.className = 'slide-link'
-        const a = document.createElement('a')
-        a.href = slideData.slideUrl
-        a.textContent = 'View Project'
-        slideLink.appendChild(a);
+      const slideTitle = document.createElement('div')
+      slideTitle.className = 'slide-title'
+      const h1 = document.createElement('h1')
+      h1.textContent = slideData.slideTitle
+      slideTitle.appendChild(h1);
 
-        slideHeader.appendChild(slideTitle);
-        slideHeader.appendChild(slideDescription);
-        slideHeader.appendChild(slideLink);
+      if (slideData.subTitle) {
+        const h2 = document.createElement('h2')
+        h2.className = 'slide-subtitle'
+        h2.textContent = slideData.subTitle
+        slideTitle.appendChild(h2);
+      }
 
-        const slideInfo = document.createElement('div')
-        slideInfo.className = 'slide-info'
+      const slideDescription = document.createElement('div')
+      slideDescription.className = 'slide-description'
+      const p = document.createElement('p')
+      p.textContent = slideData.slideDescription
+      slideDescription.appendChild(p);
 
-        const slideTags = document.createElement('div')
-        slideTags.className = 'slide-tags'
-        const tagsLabel = document.createElement('p')
-        tagsLabel.textContent = 'Tags'
-        slideTags.appendChild(tagsLabel);
+      const slideLink = document.createElement('div')
+      slideLink.className = 'slide-link'
+      const a = document.createElement('a')
+      a.href = slideData.slideUrl
+      a.textContent = 'Steam Profile'
+      slideLink.appendChild(a);
 
-        slideData.slideTags.forEach((tag) => {
-          const tagP = document.createElement('p');
-          tagP.textContent = tag
-          slideTags.appendChild(tagP)
+      slideHeader.appendChild(slideTitle);
+      slideHeader.appendChild(slideDescription);
+
+      const slideInfo = document.createElement('div')
+      slideInfo.className = 'slide-info'
+
+      const slideIndexWrapper = document.createElement('div')
+      slideIndexWrapper.className = 'slide-index-wrapper'
+      const slideIndexCopy = document.createElement('p')
+      slideIndexCopy.textContent = slideIndex.toString().padStart(2, '0')
+      const slideIndexSeperator = document.createElement('p')
+      slideIndexSeperator.textContent = '/'
+      const slidesTotalCount = document.createElement('p')
+      slidesTotalCount.textContent = totalSlides.toString().padStart(2,'0')
+      
+      slideIndexWrapper.appendChild(slideIndexCopy)
+      slideIndexWrapper.appendChild(slideIndexSeperator)
+      slideIndexWrapper.appendChild(slidesTotalCount)
+
+      slideInfo.appendChild(slideIndexWrapper)
+
+      slide.appendChild(slideHeader)
+      slide.appendChild(slideInfo)
+      slide.appendChild(slideLink)
+
+      return slide;
+    }
+
+    const splitText = (slide)=> {
+      const slideHeader = slide.querySelector('.slide-title h1')
+      if(slideHeader) {
+        SplitText.create(slideHeader, {
+          type:'word',
+          wordsClass: 'word',
+          mask:'words',
         })
-
-        const slideIndexWrapper = document.createElement('div')
-        slideIndexWrapper.className = 'slide-index-wrapper'
-        const slideIndexCopy = document.createElement('p')
-        slideIndexCopy.textContent = slideIndex.toString().padStart(2, '0')
-        const slideIndexSeperator = document.createElement('p')
-        slideIndexSeperator.textContent = '/'
-        const slidesTotalCount = document.createElement('p')
-        slidesTotalCount.textContent = totalSlides.toString().padStart(2,'0')
-        
-        slideIndexWrapper.appendChild(slideIndexCopy)
-        slideIndexWrapper.appendChild(slideIndexSeperator)
-        slideIndexWrapper.appendChild(slidesTotalCount)
-
-        slideInfo.appendChild(slideTags)
-        slideInfo.appendChild(slideIndexWrapper)
-
-        slide.appendChild(slideImg)
-        slide.appendChild(slideHeader)
-        slide.appendChild(slideInfo)
-
-        return slide;
       }
 
-      const splitText = (slide)=> {
-    const slideHeader = slide.querySelector('.slide-title h1')
-    if(slideHeader) {
-      SplitText.create(slideHeader, {
-        type:'word',
-        wordsClass: 'word',
-        mask:'words',
+      const slideContent = slide.querySelectorAll('p,a')
+      slideContent.forEach((element)=>{
+        SplitText.create(element,{
+          type:'lines',
+          linesClass: 'line',
+          mask:'lines',
+          reduceWhiteSpace:false,
+        })
       })
     }
 
-    const slideContent = slide.querySelector('p,a')
-    slideContent.forEach((element)=>{
-      SplitText.create(element,{
-        type:'lines',
-        linesClass: 'line',
-        mask:'lines',
-        reduceWhiteSpace:false,
-      })
-    })
-  }
+    const animateSlide = (direction)=> {
+      if(isAnimating || !scrollAllowed) return
 
-  const animateSlide = (direction)=> {
-    if(isAnimating || !scrollAllowed) return
+      isAnimating = true
+      scrollAllowed = false
 
-    isAnimating = true
-    scrollAllowed = false
+      const slider = document.querySelector('.slider')
+      const currentSlideElement = slider.querySelector('.slide')
 
-    const slider = document.querySelector('.slider')
-    const currentSlideElement = slider.querySelector('.slide')
-
-    if(direction === 'down') {
-      currentSlide = createSlide === totalSlides ? 1 : currentSlide + 1
-    } else {
-      currentSlide = currentSlide === 1 ? totalSlides : currentSlide - 1
-    }
-
-    const exitY = direction === 'down' ? '-200vh' : '200vh'
-    const entryY = direction === 'down' ? '100vh' : '-100vh'
-    const entryClipPath = direction === 'down' ? 'polygon(20% 20%, 80% 20%,80% 100%,20% 100%)' : 'polygon(20% 0%, 80% 0%, 80% 80%,20% 80%)'
-
-    gsap.to(currentSlideElement, {
-      scale: 0.25,
-      opacity: 0,
-      rotation:30,
-      y:exitY,
-      duration:2,
-      ease:'power4.inOut',
-      force3d: true,
-      onComplete: ()=> {
-        currentSlideElement.remove()
+      if(direction === 'down') {
+        currentSlide = currentSlide === totalSlides ? 1 : currentSlide + 1
+      } else {
+        currentSlide = currentSlide === 1 ? totalSlides : currentSlide - 1
       }
-    })
 
-    setTimeout(()=>{
-      const newSlide = createSlide(currentSlide)
+      // Ensure currentSlide is within valid bounds
+      if (currentSlide < 1) currentSlide = 1
+      if (currentSlide > totalSlides) currentSlide = totalSlides
 
-      gsap.set(newSlide, {
-        y:entryY,
-        clipPath:entryClipPath,
-        force3d:true,
-      })
+      const exitY = direction === 'down' ? '-200vh' : '200vh'
+      const entryY = direction === 'down' ? '100vh' : '-100vh'
+      const entryClipPath = direction === 'down' ? 'polygon(20% 20%, 80% 20%,80% 100%,20% 100%)' : 'polygon(20% 0%, 80% 0%, 80% 80%,20% 80%)'
 
-      slider.appendChild(newSlide);
-
-      SplitText(newSlide);
-
-      const words = newSlide.querySelector('.word')
-      const lines = newSlide.querySelector('.line')
-
-      gsap.set([...words,...lines], {
-        y:'100%',
-        force3d:true,
-      })
-
-      gsap.to(newSlide, {
-        y:0,
-        clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
-        duration:1.5,
-        ease:'power4.out',
-        force3d:true,
-        onStart: ()=> {
-          const tl = gsap.timeline()
-
-          const headerWords = newSlide.querySelectorAll('.slide-title .word')
-          tl.to(
-            headerWords,
-            {
-              y:'0%',
-              duration:1,
-              ease: 'power4.out',
-              stagger:0.1,
-              force3d:true,
-            },
-            0.75
-          )
-
-          const tagsLines = newSlide.querySelectorAll('.slide-tags .line')
-          const indexLines = newSlide.querySelectorAll('.slide-index-wrapper .line')
-          const descriptionLines = newSlide.querySelectorAll('.slide-description .line')
-
-          tl.to(
-            tagsLines,
-            {
-              y:'0%',
-              duration:1,
-              ease:'power4.out',
-              stagger:0.1,
-            },
-            '-=0.75'
-          );
-
-          tl.to(
-            indexLines,
-            {
-              y:'0%',
-              duration:1,
-              ease:'power4.out',
-              stagger:0.1,
-            },
-            '<'
-          );
-
-          tl.to(
-            descriptionLines,
-            {
-              y:'0%',
-              duration:1,
-              ease:'power4.out',
-              stagger:0.1,
-            },
-            '<'
-          );
-
-          const linkLines = newSlide.querySelectorAll('.slide-link .line')
-          tl.to(
-            linkLines,
-            {
-              y:'0%',
-              duration:1,
-              ease:'power4.out',
-            },
-            '-=1'
-          )
-        },
-
+      gsap.to(currentSlideElement, {
+        scale: 0.25,
+        opacity: 0,
+        rotation:30,
+        y:exitY,
+        duration:2,
+        ease:'power4.inOut',
+        force3d: true,
         onComplete: ()=> {
-          isAnimating = false;
-          setTimeout(()=> {
-            scrollAllowed = true;
-            lastScrollTime = Date.now()
-          },100)
+          currentSlideElement.remove()
         }
       })
-    }, 750)
-  }
 
-  const handleScroll = (direction)=>{
-    const now = Date.now();
+      setTimeout(()=>{
+        const newSlide = createSlide(currentSlide)
+        
+        if (!newSlide) {
+          isAnimating = false
+          scrollAllowed = true
+          return
+        }
 
-    if(isAnimating || !scrollAllowed) return
-    if(now - lastScrollTime < 1000) return
+        gsap.set(newSlide, {
+          y:entryY,
+          clipPath:entryClipPath,
+          force3d:true,
+        })
 
-    lastScrollTime = now
-    animateSlide(direction)
-  }
+        slider.appendChild(newSlide);
 
-  window.addEventListener('wheel',
-    (e)=>{
+        splitText(newSlide);
+
+        const words = newSlide.querySelectorAll('.word')
+        const lines = newSlide.querySelectorAll('.line')
+
+        gsap.set([...words,...lines], {
+          y:'100%',
+          force3d:true,
+        })
+
+        gsap.to(newSlide, {
+          y:0,
+          clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
+          duration:1.5,
+          ease:'power4.out',
+          force3d:true,
+          onStart: ()=> {
+            const tl = gsap.timeline()
+
+            const headerWords = newSlide.querySelectorAll('.slide-title .word')
+            tl.to(
+              headerWords,
+              {
+                y:'0%',
+                duration:1,
+                ease: 'power4.out',
+                stagger:0.1,
+                force3d:true,
+              },
+              0.75
+            )
+
+            const indexLines = newSlide.querySelectorAll('.slide-index-wrapper .line')
+            const descriptionLines = newSlide.querySelectorAll('.slide-description .line')
+
+            tl.to(
+              indexLines,
+              {
+                y:'0%',
+                duration:1,
+                ease:'power4.out',
+                stagger:0.1,
+              },
+              '<'
+            );
+
+            tl.to(
+              descriptionLines,
+              {
+                y:'0%',
+                duration:1,
+                ease:'power4.out',
+                stagger:0.1,
+              },
+              '<'
+            );
+
+            const linkLines = newSlide.querySelectorAll('.slide-link .line')
+            tl.to(
+              linkLines,
+              {
+                y:'0%',
+                duration:1,
+                ease:'power4.out',
+              },
+              '-=1'
+            )
+          },
+
+          onComplete: ()=> {
+            isAnimating = false;
+            setTimeout(()=> {
+              scrollAllowed = true;
+              lastScrollTime = Date.now()
+            },100)
+          }
+        })
+      }, 750)
+    }
+
+    const handleScroll = (direction)=>{
+      const now = Date.now();
+
+      if(isAnimating || !scrollAllowed) return
+      if(now - lastScrollTime < 1000) return
+
+      lastScrollTime = now
+      animateSlide(direction)
+    }
+
+    const handleWheel = (e)=>{
       e.preventDefault();
       const direction = e.deltaY > 0 ? 'down' : 'up'
       handleScroll(direction)
-    },
-    {
-      passive:false
     }
-  );
 
-  let touchStartY = 0
-  let isTouchActive = false
+    let touchStartY = 0
+    let isTouchActive = false
 
-  window.addEventListener('touchstart', (e)=>{
-    touchStartY = e.touches[0].clientY
-    isTouchActive = true
-  }, {passive: false})
+    const handleTouchStart = (e)=>{
+      touchStartY = e.touches[0].clientY
+      isTouchActive = true
+    }
 
-  window.addEventListener('touchmove', (e)=>{
-    e.preventDefault()
-    if(!isTouchActive || isAnimating || !scrollAllowed) return
+    const handleTouchMove = (e)=>{
+      e.preventDefault()
+      if(!isTouchActive || isAnimating || !scrollAllowed) return
 
-    const touchCurrentY = e.touches[0].clientY;
-    const difference = touchStartY - touchCurrentY
+      const touchCurrentY = e.touches[0].clientY;
+      const difference = touchStartY - touchCurrentY
 
-    if(Math.abs(difference) > 50) {
+      if(Math.abs(difference) > 50) {
+        isTouchActive = false
+        const direction = difference > 0 ? 'down' : 'up'
+        handleScroll(direction)
+      }
+    }
+
+    const handleTouchEnd = ()=>{
       isTouchActive = false
-      const direction = difference > 0 ? 'down' : 'up'
-      handleScroll(direction)
     }
-  }, {passive : false})
 
-  window.addEventListener('touchend',()=>{
-    isTouchActive = false
-  })
-    })
+    // Initialize the first slide
+    const slider = document.querySelector('.slider')
+    const existingSlide = slider.querySelector('.slide')
+    if (existingSlide) {
+      existingSlide.remove()
+    }
+    const firstSlide = createSlide(1)
+    if (firstSlide) {
+      slider.appendChild(firstSlide)
+      splitText(firstSlide)
+      
+      // Set initial animation state for first slide
+      const words = firstSlide.querySelectorAll('.word')
+      const lines = firstSlide.querySelectorAll('.line')
+      
+      gsap.set([...words, ...lines], {
+        y: '0%',
+        force3d: true,
+      })
+    }
+
+    window.addEventListener('wheel', handleWheel, { passive: false })
+    window.addEventListener('touchstart', handleTouchStart, { passive: false })
+    window.addEventListener('touchmove', handleTouchMove, { passive: false })
+    window.addEventListener('touchend', handleTouchEnd)
+
+    return () => {
+      window.removeEventListener('wheel', handleWheel)
+      window.removeEventListener('touchstart', handleTouchStart)
+      window.removeEventListener('touchmove', handleTouchMove)
+      window.removeEventListener('touchend', handleTouchEnd)
+    }
   }, []);
 
   
@@ -306,40 +334,8 @@ const page = () => {
 
   return (
     <main>
-      
       <div className="slider">
-        <div className="slide">
-          <div className="slide-img">
-            <img className="blur-[2px]" src="/mountain.jpg" alt="/"/>
-          </div>
-          <div className="slide-header">
-            <div className="slide-title">
-              <h1>Monochrome Signal</h1>
-            </div>
-            <div className="slide-description">
-              <p>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Quasi, aut debitis nemo suscipit laborum dolorum, soluta distinctio reprehenderit enim amet, culpa delectus deserunt magni cupiditate. Quasi esse tempore ducimus nihil.
-              </p>
-            </div>
-            <div className="slide-link">
-              <a href="">View Project</a>
-            </div>
-          </div>
-          <div className="slide-info">
-            <div className="slide-tags">
-              <p>Tags</p>
-              <p>Monochrome</p>
-              <p>Editorial</p>
-              <p>Fashion</p>
-              <p>Visual Identity</p>
-            </div>
-            <div className="slide-index-wrapper">
-              <p id='slide-index'>01</p>
-              <p>/</p>
-              <p id="total-slide-count">04</p>
-            </div>
-          </div>
-        </div>
+        {/* First slide will be initialized dynamically in useEffect */}
       </div>
     </main>
   )
