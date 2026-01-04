@@ -4,7 +4,6 @@ import Lenis from '@studio-freight/lenis'
 import { useEffect } from 'react'
 import gsap from 'gsap'
 import {ScrollTrigger} from 'gsap/ScrollTrigger'
-import { m } from 'framer-motion'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -38,16 +37,16 @@ const page = () => {
 
 
   const spotlightItems = [
-    {name: 'Silent Arc', img: '/mountain.jpg'},
-    {name: 'Silent Arc2', img: '/mountain.jpg'},
-    {name: 'Silent Arc3', img: '/mountain.jpg'},
-    {name: 'Silent Arc4', img: '/mountain.jpg'},
-    {name: 'Silent Arc5', img: '/mountain.jpg'},
-    {name: 'Silent Arc6', img: '/mountain.jpg'},
-    {name: 'Silent Arc7', img: '/mountain.jpg'},
-    {name: 'Silent Arc8', img: '/mountain.jpg'},
-    {name: 'Silent Arc9', img: '/mountain.jpg'},
-    {name: 'Silent Arc10', img: '/mountain.jpg'},
+    {name: 'Silent Arc', img: '/img-1.jpg'},
+    {name: 'Silent Arc2', img: '/img-2.jpg'},
+    {name: 'Silent Arc3', img: '/img-3.jpg'},
+    {name: 'Silent Arc4', img: '/img-4.jpg'},
+    {name: 'Silent Arc5', img: '/img-5.jpg'},
+    {name: 'Silent Arc6', img: '/img-6.jpg'},
+    {name: 'Silent Arc7', img: '/img-7.jpg'},
+    {name: 'Silent Arc8', img: '/img-8.jpg'},
+    {name: 'Silent Arc9', img: '/img-9.jpg'},
+    {name: 'Silent Arc10', img: '/img-10.jpg'},
   ]
 
   const titlesContainer = document.querySelector('.spotlight-titles');
@@ -246,7 +245,7 @@ const page = () => {
         </div>
 
         <div className="spotlight-bg-img">
-          <img src='mountain.jpg' alt=''/>
+          <img src='img-3.jpg' alt=''/>
         </div>
 
         <div className="spotlight-titles-container">
