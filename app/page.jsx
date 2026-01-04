@@ -1,342 +1,268 @@
 'use client'
 
-import gsap from "gsap"
-import { SplitText } from "gsap/SplitText"
-import { useEffect } from "react"
-import slides from '../constants/index.js'
+import Lenis from '@studio-freight/lenis'
+import { useEffect } from 'react'
+import gsap from 'gsap'
+import {ScrollTrigger} from 'gsap/ScrollTrigger'
+import { m } from 'framer-motion'
 
-gsap.registerPlugin(SplitText)
+gsap.registerPlugin(ScrollTrigger)
 
 
 const page = () => {
 
   useEffect(() => {
-    if (!slides || slides.length === 0) {
-      console.error('No slides data available')
-      return
+    const lenis = new Lenis()
+  
+    lenis.scrollTo(0, { immediate: true })
+  
+    let rafId
+    const raf = (time) => {
+      lenis.raf(time)
+      rafId = requestAnimationFrame(raf)
     }
-
-    const totalSlides = slides.length;
-    let currentSlide = 1;
-
-    let isAnimating = false
-    let scrollAllowed = true
-    let lastScrollTime = 0
-
-    const createSlide = (slideIndex)=>{
-      // Ensure slideIndex is within valid range (1 to totalSlides)
-      if (slideIndex < 1 || slideIndex > totalSlides) {
-        console.error(`Invalid slide index: ${slideIndex}. Valid range: 1-${totalSlides}`)
-        return null
-      }
-
-      const arrayIndex = slideIndex - 1
-      const slideData = slides[arrayIndex]
-
-      if (!slideData) {
-        console.error(`Slide data not found for index ${slideIndex} (array index ${arrayIndex}). Total slides: ${totalSlides}, slides array length: ${slides.length}`)
-        console.log('Available slides:', slides.map((s, i) => ({ index: i, title: s?.slideTitle })))
-        return null
-      }
-
-      const slide = document.createElement('div')
-      slide.className = 'slide'
-
-      const slideHeader = document.createElement('div')
-      slideHeader.className = 'slide-header'
-
-      const slideTitle = document.createElement('div')
-      slideTitle.className = 'slide-title'
-      const h1 = document.createElement('h1')
-      h1.textContent = slideData.slideTitle
-      slideTitle.appendChild(h1);
-
-      if (slideData.subTitle) {
-        const h2 = document.createElement('h2')
-        h2.className = 'slide-subtitle'
-        h2.textContent = slideData.subTitle
-        slideTitle.appendChild(h2);
-      }
-
-      const slideDescription = document.createElement('div')
-      slideDescription.className = 'slide-description'
-      const p = document.createElement('p')
-      p.textContent = slideData.slideDescription
-      slideDescription.appendChild(p);
-
-      const slideLink = document.createElement('div')
-      slideLink.className = 'slide-link'
-      const a = document.createElement('a')
-      a.href = slideData.slideUrl
-      a.textContent = 'Steam Profile'
-      slideLink.appendChild(a);
-
-      slideHeader.appendChild(slideTitle);
-      slideHeader.appendChild(slideDescription);
-
-      const slideInfo = document.createElement('div')
-      slideInfo.className = 'slide-info'
-
-      const slideIndexWrapper = document.createElement('div')
-      slideIndexWrapper.className = 'slide-index-wrapper'
-      const slideIndexCopy = document.createElement('p')
-      slideIndexCopy.textContent = slideIndex.toString().padStart(2, '0')
-      const slideIndexSeperator = document.createElement('p')
-      slideIndexSeperator.textContent = '/'
-      const slidesTotalCount = document.createElement('p')
-      slidesTotalCount.textContent = totalSlides.toString().padStart(2,'0')
-      
-      slideIndexWrapper.appendChild(slideIndexCopy)
-      slideIndexWrapper.appendChild(slideIndexSeperator)
-      slideIndexWrapper.appendChild(slidesTotalCount)
-
-      slideInfo.appendChild(slideIndexWrapper)
-
-      slide.appendChild(slideHeader)
-      slide.appendChild(slideInfo)
-      slide.appendChild(slideLink)
-
-      return slide;
-    }
-
-    const splitText = (slide)=> {
-      const slideHeader = slide.querySelector('.slide-title h1')
-      if(slideHeader) {
-        SplitText.create(slideHeader, {
-          type:'word',
-          wordsClass: 'word',
-          mask:'words',
-        })
-      }
-
-      const slideContent = slide.querySelectorAll('p,a')
-      slideContent.forEach((element)=>{
-        SplitText.create(element,{
-          type:'lines',
-          linesClass: 'line',
-          mask:'lines',
-          reduceWhiteSpace:false,
-        })
-      })
-    }
-
-    const animateSlide = (direction)=> {
-      if(isAnimating || !scrollAllowed) return
-
-      isAnimating = true
-      scrollAllowed = false
-
-      const slider = document.querySelector('.slider')
-      const currentSlideElement = slider.querySelector('.slide')
-
-      if(direction === 'down') {
-        currentSlide = currentSlide === totalSlides ? 1 : currentSlide + 1
-      } else {
-        currentSlide = currentSlide === 1 ? totalSlides : currentSlide - 1
-      }
-
-      // Ensure currentSlide is within valid bounds
-      if (currentSlide < 1) currentSlide = 1
-      if (currentSlide > totalSlides) currentSlide = totalSlides
-
-      const exitY = direction === 'down' ? '-200vh' : '200vh'
-      const entryY = direction === 'down' ? '100vh' : '-100vh'
-      const entryClipPath = direction === 'down' ? 'polygon(20% 20%, 80% 20%,80% 100%,20% 100%)' : 'polygon(20% 0%, 80% 0%, 80% 80%,20% 80%)'
-
-      gsap.to(currentSlideElement, {
-        scale: 0.25,
-        opacity: 0,
-        rotation:30,
-        y:exitY,
-        duration:2,
-        ease:'power4.inOut',
-        force3d: true,
-        onComplete: ()=> {
-          currentSlideElement.remove()
-        }
-      })
-
-      setTimeout(()=>{
-        const newSlide = createSlide(currentSlide)
-        
-        if (!newSlide) {
-          isAnimating = false
-          scrollAllowed = true
-          return
-        }
-
-        gsap.set(newSlide, {
-          y:entryY,
-          clipPath:entryClipPath,
-          force3d:true,
-        })
-
-        slider.appendChild(newSlide);
-
-        splitText(newSlide);
-
-        const words = newSlide.querySelectorAll('.word')
-        const lines = newSlide.querySelectorAll('.line')
-
-        gsap.set([...words,...lines], {
-          y:'100%',
-          force3d:true,
-        })
-
-        gsap.to(newSlide, {
-          y:0,
-          clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
-          duration:1.5,
-          ease:'power4.out',
-          force3d:true,
-          onStart: ()=> {
-            const tl = gsap.timeline()
-
-            const headerWords = newSlide.querySelectorAll('.slide-title .word')
-            tl.to(
-              headerWords,
-              {
-                y:'0%',
-                duration:1,
-                ease: 'power4.out',
-                stagger:0.1,
-                force3d:true,
-              },
-              0.75
-            )
-
-            const indexLines = newSlide.querySelectorAll('.slide-index-wrapper .line')
-            const descriptionLines = newSlide.querySelectorAll('.slide-description .line')
-
-            tl.to(
-              indexLines,
-              {
-                y:'0%',
-                duration:1,
-                ease:'power4.out',
-                stagger:0.1,
-              },
-              '<'
-            );
-
-            tl.to(
-              descriptionLines,
-              {
-                y:'0%',
-                duration:1,
-                ease:'power4.out',
-                stagger:0.1,
-              },
-              '<'
-            );
-
-            const linkLines = newSlide.querySelectorAll('.slide-link .line')
-            tl.to(
-              linkLines,
-              {
-                y:'0%',
-                duration:1,
-                ease:'power4.out',
-              },
-              '-=1'
-            )
-          },
-
-          onComplete: ()=> {
-            isAnimating = false;
-            setTimeout(()=> {
-              scrollAllowed = true;
-              lastScrollTime = Date.now()
-            },100)
-          }
-        })
-      }, 750)
-    }
-
-    const handleScroll = (direction)=>{
-      const now = Date.now();
-
-      if(isAnimating || !scrollAllowed) return
-      if(now - lastScrollTime < 1000) return
-
-      lastScrollTime = now
-      animateSlide(direction)
-    }
-
-    const handleWheel = (e)=>{
-      e.preventDefault();
-      const direction = e.deltaY > 0 ? 'down' : 'up'
-      handleScroll(direction)
-    }
-
-    let touchStartY = 0
-    let isTouchActive = false
-
-    const handleTouchStart = (e)=>{
-      touchStartY = e.touches[0].clientY
-      isTouchActive = true
-    }
-
-    const handleTouchMove = (e)=>{
-      e.preventDefault()
-      if(!isTouchActive || isAnimating || !scrollAllowed) return
-
-      const touchCurrentY = e.touches[0].clientY;
-      const difference = touchStartY - touchCurrentY
-
-      if(Math.abs(difference) > 50) {
-        isTouchActive = false
-        const direction = difference > 0 ? 'down' : 'up'
-        handleScroll(direction)
-      }
-    }
-
-    const handleTouchEnd = ()=>{
-      isTouchActive = false
-    }
-
-    // Initialize the first slide
-    const slider = document.querySelector('.slider')
-    const existingSlide = slider.querySelector('.slide')
-    if (existingSlide) {
-      existingSlide.remove()
-    }
-    const firstSlide = createSlide(1)
-    if (firstSlide) {
-      slider.appendChild(firstSlide)
-      splitText(firstSlide)
-      
-      // Set initial animation state for first slide
-      const words = firstSlide.querySelectorAll('.word')
-      const lines = firstSlide.querySelectorAll('.line')
-      
-      gsap.set([...words, ...lines], {
-        y: '0%',
-        force3d: true,
-      })
-    }
-
-    window.addEventListener('wheel', handleWheel, { passive: false })
-    window.addEventListener('touchstart', handleTouchStart, { passive: false })
-    window.addEventListener('touchmove', handleTouchMove, { passive: false })
-    window.addEventListener('touchend', handleTouchEnd)
-
+  
+    rafId = requestAnimationFrame(raf)
+  
     return () => {
-      window.removeEventListener('wheel', handleWheel)
-      window.removeEventListener('touchstart', handleTouchStart)
-      window.removeEventListener('touchmove', handleTouchMove)
-      window.removeEventListener('touchend', handleTouchEnd)
+      cancelAnimationFrame(rafId)
+      lenis.destroy()
     }
-  }, []);
+  }, [])
+
+  const config = {
+    gap : 0.08,
+    speed: 0.03,
+    arcRadius: 500,
+  }
+
+
+  const spotlightItems = [
+    {name: 'Silent Arc', img: '/mountain.jpg'},
+    {name: 'Silent Arc2', img: '/mountain.jpg'},
+    {name: 'Silent Arc3', img: '/mountain.jpg'},
+    {name: 'Silent Arc4', img: '/mountain.jpg'},
+    {name: 'Silent Arc5', img: '/mountain.jpg'},
+    {name: 'Silent Arc6', img: '/mountain.jpg'},
+    {name: 'Silent Arc7', img: '/mountain.jpg'},
+    {name: 'Silent Arc8', img: '/mountain.jpg'},
+    {name: 'Silent Arc9', img: '/mountain.jpg'},
+    {name: 'Silent Arc10', img: '/mountain.jpg'},
+  ]
+
+  const titlesContainer = document.querySelector('.spotlight-titles');
+  const imagesContainer = document.querySelector('.spotlight-images');
+  const spotlightHeader = document.querySelector('.spotlight-header');
+  const titlesContainerElement = document.querySelector(
+    '.spotlight-titles-container'
+  )
+  const introTextElements = document.querySelectorAll('.spotlight-intro-text')
+  const imageElements = []
 
   
+  spotlightItems.forEach((item,index) =>{
+    const titleElement = document.createElement('h1');
+    titleElement.textContent = item.name;
+    if(index === 0) titleElement.style.opacity = '1';
+    titlesContainer.appendChild(titleElement);
 
+    const imgWrapper = document.createElement('div');
+    imgWrapper.className = 'spotlight-img';
+    const imgElement = document.createElement('img')
+    imgElement.src = item.img;
+    imgElement.alt = '';
+    imgWrapper.appendChild(imgElement);
+    imagesContainer.appendChild(imgWrapper)
+    imageElements.push(imgWrapper);
+  })
+
+  const titleElements = titlesContainer.querySelectorAll('h1');
+  let currentActiveIndex = 0;
+
+  const containerWidth = window.innderWidth * 0.3;
+  const containerHeight = window.innderHeight;
+  const arcStartX = containerWidth - 220;
+  const arcStartY = -200;
+  const arcEndY = containerHeight + 200;
+  const arcControlPointX = arcStartX + config.arcRadius;
+  const ArcControlPointY = containerHeight / 2;
+
+
+  const getBazierPosition = (t)=> {
+    const x = (1 - t) * (1 - t) * arcStartX + 2 * (1 - t) * t * arcControlPointX + t * t * arcStartX;
+    const y = (1 - t) * (1 - t) * arcStartY + 2 * (1 - t) * t * arcControlPointY + t * t * arcStartY;
+    return( x , y)
+  }
+
+
+  const getImgProgressState = (index , overallProgress)=> {
+    const startTime = index * config.gsap;
+    const endTime = startTime + config.speed;
+
+    if(overallProgress < startTime) return -1;
+    if (overallProgress > endTime) return 2;
+
+    return(overallProgress - startTime) / config.speed;
+  }
+
+  imageElements.forEach((img)=> gsap.set(img,{opacity:0}))
+
+  ScrollTrigger.create({
+    trigger:'.spotlight',
+    start: 'top top',
+    end: `+=${window.innderHeight * 10}px`,
+    pin:true,
+    pinSpacing:true,
+    scrub: 1,
+    onUpdate: (self)=>{
+      const progress = self.progress;
+
+      if(progress <= 0.2) {
+        const animationProgress = progress / 0.2;
+
+        const moveDistance = window.innerWidth * 0.6;
+        gsap.set(introTextElements[0], {
+          x: -animationProgress * moveDistance,
+        })
+        gsap.set(introTextElements[1],{
+          x: animationProgress * moveDistance,
+        });
+        gsap.set(introTextElements[0],{opacity:1})
+        gsap.set(introTextElements[1],{opacity:1})
+
+        gsap.set('.spotlight-bg-img', {
+          transform: `scale(${1.5 - animationProgress * 0.5})`
+        });
+
+        imageElements.forEach((img)=> gsap.set(img, {opacity:0}));
+        spotlightHeader.style.opacity = '0';
+        gsap.set(titlesContainerElement , {
+          '--before-opacity': '0',
+          '--after-opacity': '0',
+        })
+      }
+
+      else if (progress > 0.2 && progress <= 0.25) {
+        gsap.set('.spotlight-bg-img', { transform: 'scale(1)'})
+        gsap.set('.spotlight-bg-img img', { transform: 'scale(1)'})
+
+        gsap.set(introTextElements[0], {opacity:0})
+        gsap.set(introTextElements[1], {opacity:0})
+
+        imageElements.forEach((img)=>gsao.set(img, {opacity:0}))
+        spotlightHeader.style.opacity = '1';
+        gsap.set(titlesContainerElement, {
+          '--before-opacity': '1',
+          '--after-opacity': '1',
+        })
+      }
+
+      else if (progress < 0.25 && progress <= 0.95) {
+        gsap.set('.spotlight-bg-img', { transform: 'scale(1)'})
+        gsap.set('.spotlight-bg-img img', { transform: 'scale(1)'})
+
+        gsap.set(introTextElements[0], {opacity:0})
+        gsap.set(introTextElements[1], {opacity:0})
+
+        spotlightHeader.style.opacity = '1';
+        gsap.set(titlesContainerElement, {
+          '--before-opacity': '1',
+          '--after-opacity': '1',
+        })
+
+        const switchProgress = (progress - 0,.25) / 0.7;
+        const viewportHeight = window.innerHeight;
+        const titlesContainerHeight = titlesContainer.scrollHeight
+        const startPosition = viewportHeight;
+        const targetPosition = -titlesContainerHeight;
+        const totalDistance = startPosition - targetPosition;
+        const currentY = startPosition - switchProgress * totalDistance;
+
+        gsap.set('.spotlight-titles', {
+          transform: `translateY(${currentY}px)`,
+        })
+
+        imageElements.forEach((img,index)=>{
+          const imageProgress = getImgProgressState(index , switchProgress);
+
+          if(imageProgress < 0 || imageProgress > 1) {
+            gsap.set(img,{opacity: 0});
+          } else{
+            const pos = getBazierPosition(imageProgress);
+            gsap.set(img,{
+              x:pos.x - 100,
+              y: pos.y - 75,
+              opacity:1,
+            })
+          }
+        })
+
+        const viewportMiddle = viewportHeight / 2;
+        let closestIndex = 0;
+        let closestDistance = Infinity;
+
+        titleElements.forEach((title,index)=> {
+          const titleRect = title.getBoundingClientRect()
+          const titleCenter = titleRect.top + titleRect.height / 2;
+          const distanceFromCenter = Math.abs(titleCenter - viewportMiddle)
+
+          if(distanceFromCenter < closestDistance) {
+            closestDistance = distanceFromCenter;
+            closestIndex = index
+          }
+        })
+
+        if(closest !== currentActiveIndex){
+          if(titleElements[currentActiveIndex]) {
+            titleElements[currentActiveIndex].style.opacity= '0.25';
+          }
+          titleElements[closestIndex].style.opacity = '1'
+          document.querySelector('.spotlight-bg-img img').src = spotlightItems[closestIndex].img;
+          currentActiveIndex = closestIndex;
+        }
+      } else if(progress > 0.95) {
+        spotlightHeader.style.opacity = '0';
+        gsap.set(titlesContainerElement, {
+          '--before-opacity':'0',
+          '--after-opacity':'0',
+        })
+      }
+    }
+  })
 
   return (
     <main>
-      <div className="slider">
-        {/* First slide will be initialized dynamically in useEffect */}
-      </div>
+      <section className='intro'>
+        <h1>curated series of surreal frames.</h1>
+      </section>
+      <section className='spotlight'>
+        <div className="spotlight-intro-text-wrapper">
+          <div className="spotlight-intro-text">
+            <p>Beneath</p>
+          </div>
+          <div className="spotlight-intro-text">
+            <p>Beyond</p>
+          </div>
+        </div>
+
+        <div className="spotlight-bg-img">
+          <img src='mountain.jpg' alt=''/>
+        </div>
+
+        <div className="spotlight-titles-container">
+          <div className="spotlight-titles"></div>
+        </div>
+
+        <div className="spotlight-images"></div>
+
+        <div className="spotlight-header">
+          <p>Discover</p>
+        </div>
+      </section>
+      <section className='outro'>
+        <h1>Moments in still motion.</h1>
+      </section> 
+      
     </main>
   )
 }
